@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Christmas Jeopardy 2025</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState } = React;
+
+    function ChristmasJeopardy() {
+      const [phase, setPhase] = useState('setup');
+      const [rows, setRows] = useState(5);
+      const [cols, setCols] = useState(5);
+      const [numTeams, setNumTeams] = useState(2);
+      const [categories, setCategories] = useState([]);
+      const [cards, setCards] = useState([]);
+      const [teams, setTeams] = useState([]);
+      const [currentTeam, setCurrentTeam] = useState(0);
+      const [selectedCard, setSelectedCard] = useState(null);
+      const [showAnswer, setShowAnswer] = useState(false);
+      const [answeredCards, setAnsweredCards] = useState(new Set());
+
+      const initializeSetup = () => {
+        const newCategories = Array(cols).fill('').map((_, i) => `Category ${i + 1}`);
+        const newCards = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            newCards.push({
+              id: `${r}-${c}`,
+              row: r,
+              col: c,
+              points: (r + 1) * 100,
+              question: '',
+              answer: '',
+              image: null
+            });
+          }
+        }
+        setCategories(newCategories);
+        setCards(newCards);
+      };
+
+      const startGame = () => {
+        const newTeams = Array(numTeams).fill(0).map((_, i) => ({
+          id: i,
+          name: `Team ${i + 1}`,
+          score: 0
+        }));
+        setTeams(newTeams);
+        setCurrentTeam(0);
+        setAnsweredCards(new Set());
+        setPhase('game');
+      };
+
+      const backToConfig = () => {
+        setCategories([]);
+        setCards([]);
+      };
+
+      const updateCategory = (index, value) => {
+        const newCats = [...categories];
+        newCats[index] = value;
+        setCategories(newCats);
+      };
+
+      const updateCard = (id, field, value) => {
+        setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
+      };
+
+      const handleImageUpload = (id, file) => {
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setCards(cards.map(c => c.id === id ? { ...c, image: e.target.result } : c));
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const removeImage = (id) => {
+        setCards(cards.map(c => c.id === id ? { ...c, image: null } : c));
+      };
+
+      const selectCard = (card) => {
+        if (!answeredCards.has(card.id)) {
+          setSelectedCard(card);
+          setShowAnswer(false);
+        }
+      };
+
+      const revealAnswer = () => {
+        setShowAnswer(true);
+      };
+
+      const scoreAnswer = (correct) => {
+        if (selectedCard) {
+          const newTeams = [...teams];
+          if (correct) {
+            newTeams[currentTeam].score += selectedCard.points;
+          } else {
+            newTeams[currentTeam].score -= selectedCard.points;
+          }
+          setTeams(newTeams);
+          setAnsweredCards(new Set([...answeredCards, selectedCard.id]));
+          setSelectedCard(null);
+          setShowAnswer(false);
+          setCurrentTeam((currentTeam + 1) % teams.length);
+        }
+      };
+
+      const closeCard = () => {
+        if (selectedCard) {
+          setAnsweredCards(new Set([...answeredCards, selectedCard.id]));
+          setSelectedCard(null);
+          setShowAnswer(false);
+        }
+      };
+
+      if (phase === 'setup' && categories.length === 0) {
+        return (
+          <div className="min-h-screen bg-emerald-900 p-8">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-yellow-300 rounded-full p-12 shadow-2xl">
+                <div className="text-center mb-8">
+                  <h1 className="text-4xl font-bold text-blue-700 tracking-tight">CHRISTMAS JEOPARDY</h1>
+                </div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-lg font-bold text-red-600 mb-2 uppercase tracking-wide text-center">Categories</label>
+                    <input
+                      type="number"
+                      min="3"
+                      max="8"
+                      value={cols}
+                      onChange={(e) => setCols(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 border-4 border-blue-700 rounded-full text-center text-2xl font-bold focus:outline-none focus:border-fuchsia-600"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-lg font-bold text-red-600 mb-2 uppercase tracking-wide text-center">Questions per Category</label>
+                    <input
+                      type="number"
+                      min="3"
+                      max="6"
+                      value={rows}
+                      onChange={(e) => setRows(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 border-4 border-blue-700 rounded-full text-center text-2xl font-bold focus:outline-none focus:border-fuchsia-600"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-lg font-bold text-red-600 mb-2 uppercase tracking-wide text-center">Number of Teams</label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="3"
+                      value={numTeams}
+                      onChange={(e) => setNumTeams(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 border-4 border-blue-700 rounded-full text-center text-2xl font-bold focus:outline-none focus:border-fuchsia-600"
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={initializeSetup}
+                    className="w-40 mx-auto block bg-fuchsia-600 text-yellow-300 py-4 rounded-full hover:bg-blue-700 transition-colors font-bold text-xl uppercase tracking-wide shadow-lg"
+                  >
+                    Configure Board
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (phase === 'setup') {
+        return (
+          <div className="min-h-screen bg-emerald-900 p-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="bg-yellow-300 rounded-3xl p-8 shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <button
+                    onClick={backToConfig}
+                    className="bg-blue-700 text-yellow-300 px-6 py-3 rounded-full hover:bg-fuchsia-600 transition-colors font-bold uppercase tracking-wide"
+                  >
+                    Back
+                  </button>
+                  <h2 className="text-4xl font-bold text-blue-700 uppercase tracking-tight">Configure Board</h2>
+                  <div className="w-24"></div>
+                </div>
+                
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold text-red-600 mb-4 uppercase">Categories</h3>
+                  <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                    {categories.map((cat, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        value={cat}
+                        onChange={(e) => updateCategory(i, e.target.value)}
+                        placeholder={`Category ${i + 1}`}
+                        className="px-3 py-3 border-4 border-blue-700 rounded-full text-center font-bold focus:outline-none focus:border-fuchsia-600"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6 max-h-96 overflow-y-auto mb-6">
+                  {Array(rows).fill(0).map((_, r) => (
+                    <div key={r} className="border-4 border-blue-700 rounded-3xl p-4 bg-fuchsia-100">
+                      <h4 className="font-bold text-red-600 mb-3 text-xl uppercase">Row {r + 1} - {(r + 1) * 100} points</h4>
+                      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                        {cards.filter(c => c.row === r).map(card => (
+                          <div key={card.id} className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder="Question"
+                              value={card.question}
+                              onChange={(e) => updateCard(card.id, 'question', e.target.value)}
+                              className="w-full px-2 py-2 text-sm border-2 border-blue-700 rounded-full focus:outline-none focus:border-fuchsia-600 font-bold"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Answer"
+                              value={card.answer}
+                              onChange={(e) => updateCard(card.id, 'answer', e.target.value)}
+                              className="w-full px-2 py-2 text-sm border-2 border-blue-700 rounded-full focus:outline-none focus:border-fuchsia-600 font-bold"
+                            />
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(card.id, e.target.files[0])}
+                                id={`file-${card.id}`}
+                                className="hidden"
+                              />
+                              <label
+                                htmlFor={`file-${card.id}`}
+                                className="block w-full px-2 py-2 text-xs border-2 border-blue-700 rounded-full text-center cursor-pointer hover:bg-fuchsia-100 font-bold bg-white"
+                              >
+                                {card.image ? '✓ Image Added' : '+ Add Image'}
+                              </label>
+                              {card.image && (
+                                <button
+                                  onClick={() => removeImage(card.id)}
+                                  className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 text-xs font-bold hover:bg-red-700"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={startGame}
+                  className="w-full bg-fuchsia-600 text-yellow-300 py-4 rounded-full hover:bg-emerald-700 transition-colors font-bold text-2xl uppercase tracking-wide shadow-lg"
+                >
+                  Start Game
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-emerald-900 p-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-yellow-300 rounded-full p-6 mb-6 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-blue-700 uppercase tracking-tight">Christmas Jeopardy</h1>
+                </div>
+                <div className="flex gap-4">
+                  {teams.map((team, i) => (
+                    <div
+                      key={team.id}
+                      className={`px-6 py-3 rounded-full border-4 ${
+                        i === currentTeam 
+                          ? 'bg-fuchsia-600 text-yellow-300 border-fuchsia-600' 
+                          : 'bg-blue-700 text-yellow-300 border-blue-700'
+                      } transition-colors`}
+                    >
+                      <div className="font-bold uppercase text-sm">{team.name}</div>
+                      <div className="text-3xl font-bold">{team.score}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-300 rounded-3xl p-6 shadow-2xl">
+              <div className="grid gap-3 mb-4" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                {categories.map((cat, i) => (
+                  <div key={i} className="bg-blue-700 text-yellow-300 p-4 rounded-full text-center font-bold uppercase tracking-wide border-4 border-blue-700">
+                    {cat}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+                {cards.map(card => (
+                  <button
+                    key={card.id}
+                    onClick={() => selectCard(card)}
+                    disabled={answeredCards.has(card.id)}
+                    className={`aspect-square rounded-full text-4xl font-bold transition-all border-4 ${
+                      answeredCards.has(card.id)
+                        ? 'bg-emerald-800 text-emerald-600 border-emerald-800 cursor-not-allowed'
+                        : 'bg-fuchsia-600 text-yellow-300 border-fuchsia-600 hover:bg-red-600 hover:border-red-600 cursor-pointer shadow-lg'
+                    }`}
+                  >
+                    {answeredCards.has(card.id) ? '' : card.points}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedCard && (
+              <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+                <div className="bg-yellow-300 rounded-3xl p-8 max-w-2xl w-full shadow-2xl border-4 border-blue-700">
+                  <div className="text-center mb-6">
+                    <div className="text-fuchsia-600 text-6xl font-bold mb-6">{selectedCard.points}</div>
+                    <div className="text-3xl text-blue-700 font-bold mb-6 leading-tight">{selectedCard.question}</div>
+                    
+                    {selectedCard.image && (
+                      <div className="mb-6">
+                        <img 
+                          src={selectedCard.image} 
+                          alt="Question" 
+                          className="max-w-full max-h-64 mx-auto rounded-2xl border-4 border-blue-700 shadow-lg"
+                        />
+                      </div>
+                    )}
+                    
+                    {showAnswer && (
+                      <div className="text-2xl text-red-600 bg-fuchsia-100 p-6 rounded-3xl mb-6 font-bold border-4 border-fuchsia-600">
+                        {selectedCard.answer}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {!showAnswer ? (
+                    <button
+                      onClick={revealAnswer}
+                      className="w-full bg-blue-700 text-yellow-300 py-4 rounded-full hover:bg-fuchsia-600 transition-colors font-bold text-xl uppercase tracking-wide shadow-lg mb-3"
+                    >
+                      Show Answer
+                    </button>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => scoreAnswer(true)}
+                        className="flex-1 bg-emerald-700 text-yellow-300 py-4 rounded-full hover:bg-emerald-800 transition-colors font-bold uppercase tracking-wide"
+                      >
+                        Correct +{selectedCard.points}
+                      </button>
+                      <button
+                        onClick={() => scoreAnswer(false)}
+                        className="flex-1 bg-red-600 text-yellow-300 py-4 rounded-full hover:bg-red-700 transition-colors font-bold uppercase tracking-wide"
+                      >
+                        Wrong -{selectedCard.points}
+                      </button>
+                      <button
+                        onClick={closeCard}
+                        className="flex-1 bg-blue-700 text-yellow-300 py-4 rounded-full hover:bg-blue-800 transition-colors font-bold uppercase tracking-wide"
+                      >
+                        Skip
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ChristmasJeopardy />);
+  </script>
+</body>
+</html>
